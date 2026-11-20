@@ -133,7 +133,7 @@ footer a{color:var(--text-light)}
 
   <!-- 1. HERO -->
   <section class="hero">
-    <span class="badge" id="mode">Demo mode</span>
+    <span class="badge" id="mode">Checking…</span>
     <h1>HR answers, interview coaching and job applications in one place.</h1>
     <p class="lead">Built for employees and job seekers who want a fast, clear answer instead of waiting on an HR inbox. Powered by n8n workflows and an AI model.</p>
     <div class="cta">
@@ -159,7 +159,7 @@ footer a{color:var(--text-light)}
   <section id="try">
     <p class="label">02 / TRY IT</p>
     <h2>Use the assistant</h2>
-    <p class="sub" id="tryText">Demo mode answers with sample data. Connect your n8n in the CONFIG block to go live.</p>
+    <p class="sub" id="tryText">Checking the n8n server…</p>
 
     <div class="panel" id="ask-hr">
       <h3>Ask HR</h3>
@@ -227,36 +227,83 @@ footer a{color:var(--text-light)}
 
 <script>
 const CONFIG = {
-  n8nBase: "https://playback-reply-rambling.ngrok-free.dev",  // no trailing slash. Empty = demo mode
+  n8nBase: "https://playback-reply-rambling.ngrok-free.dev",  // no trailing slash. Empty = always offline/demo
   chat: "/webhook/9f859b66-bd30-4594-a999-ca0597727b6e/chat",
   applyForm: "/form/376e7fa0-f418-4ea8-9582-db37fc4988c1",
   coachForm: "/form/bc779da8-f9b5-4bf1-a0e4-8ac14fbccfdb"
 };
-const LIVE = !!CONFIG.n8nBase;
+const CHECK_EVERY_MS = 30000;   // how often the page re-checks the server
+const CHECK_TIMEOUT_MS = 8000;  // how long to wait before calling it offline
+const HEADERS = { "Content-Type": "application/json", "ngrok-skip-browser-warning": "1" };
 const $ = s => document.querySelector(s);
 const sessionId = crypto.randomUUID();
+let LIVE = false;
+
 const DEMO = [
   ["leave", "Full-time employees get 21 days of paid annual leave. (Source: Leave Policy)"],
   ["remote", "You can work remotely up to 2 days a week after probation. (Source: Remote Work Policy)"]
 ];
 
-if (LIVE) {
-  $("#mode").textContent = "Live · n8n"; $("#mode").classList.add("live");
-  $("#tryText").textContent = "Live mode: the chat and forms run on a real n8n server.";
-  $("#applyLink").href = CONFIG.n8nBase + CONFIG.applyForm;
-  $("#coachLink").href = CONFIG.n8nBase + CONFIG.coachForm;
-  ["#applyLink", "#coachLink"].forEach(id => { $(id).target = "_blank"; $(id).rel = "noopener"; });
-} else {
-  $("#coachNote").textContent = "Demo mode: the live form opens once n8n is connected.";
-  $("#applyNote").textContent = "Demo mode: the live form opens once n8n is connected.";
-  ["#applyLink", "#coachLink"].forEach(id => $(id).addEventListener("click", e => e.preventDefault()));
+/* ---------- status: Live n8n / Offline ---------- */
+function setStatus(live) {
+  LIVE = live;
+  const badge = $("#mode");
+  badge.textContent = live ? "Live · n8n" : "Offline";
+  badge.classList.toggle("live", live);
+  $("#tryText").textContent = live
+    ? "Live mode: the chat and forms run on a real n8n server."
+    : "The n8n server is offline. The chat answers with sample data, and the forms are unavailable until it is back.";
+  const note = live ? "" : "Offline: the form opens when the n8n server is live.";
+  $("#coachNote").textContent = note;
+  $("#applyNote").textContent = note;
 }
 
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("Timed out after " + ms + " ms")), ms))
+  ]);
+}
+
+async function checkServer() {
+  if (!CONFIG.n8nBase) return setStatus(false);
+  try {
+    // "loadPreviousSession" is a light chat request: it does not run the AI agent.
+    const r = await withTimeout(fetch(CONFIG.n8nBase + CONFIG.chat, {
+      method: "POST", headers: HEADERS,
+      body: JSON.stringify({ action: "loadPreviousSession", sessionId })
+    }), CHECK_TIMEOUT_MS);
+    if (!r.ok) throw new Error("HTTP " + r.status + " (is the workflow Active?)");
+    await withTimeout(r.json(), CHECK_TIMEOUT_MS); // an ngrok warning page or error page is HTML and fails here
+    setStatus(true);
+  } catch (err) {
+    console.warn("[HR Assistant] n8n check failed:", err);
+    setStatus(false);
+  }
+}
+
+if (CONFIG.n8nBase) {
+  $("#applyLink").href = CONFIG.n8nBase + CONFIG.applyForm;
+  $("#coachLink").href = CONFIG.n8nBase + CONFIG.coachForm;
+}
+["#applyLink", "#coachLink"].forEach(id => {
+  const a = $(id); a.target = "_blank"; a.rel = "noopener";
+  a.addEventListener("click", e => { if (!LIVE) e.preventDefault(); });
+});
+
+/* ---------- chat ---------- */
 function add(cls, text) {
   const d = document.createElement("div"); d.className = cls;
   if (cls === "me") { const s = document.createElement("span"); s.textContent = text; d.append(s); }
   else d.textContent = text;
   $("#msgs").append(d); $("#msgs").scrollTop = 1e9; return d;
+}
+
+function demoAnswer(q) {
+  const t = q.toLowerCase();
+  if (/^\s*(hi|hello|hey|salam|مرحبا)\b/.test(t)) return "Hello! Ask me about leave or remote work.";
+  const hit = DEMO.find(([k]) => t.includes(k));
+  return hit ? hit[1] : "Demo mode knows about leave and remote work. Try one of those.";
 }
 
 async function send(q) {
@@ -266,15 +313,23 @@ async function send(q) {
   if (LIVE) {
     try {
       const r = await fetch(CONFIG.n8nBase + CONFIG.chat, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "1" },
+        method: "POST", headers: HEADERS,
         body: JSON.stringify({ action: "sendMessage", sessionId, chatInput: q })
       });
-      bot.textContent = (await r.json()).output; return;
-    } catch (err) { prefix = "The live assistant is offline, so here is a demo answer. "; }
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const data = await r.json();
+      const text = data.output ?? data.text ?? data.message;
+      if (!text) throw new Error("The workflow replied without an 'output' field: " + JSON.stringify(data));
+      bot.textContent = text; return;
+    } catch (err) {
+      console.warn("[HR Assistant] chat request failed:", err);
+      setStatus(false);
+      prefix = "The live assistant is offline, so here is a demo answer. ";
+    }
+  } else {
+    prefix = "The live assistant is offline, so here is a demo answer. ";
   }
-  const hit = DEMO.find(([k]) => q.toLowerCase().includes(k));
-  bot.textContent = prefix + (hit ? hit[1] : "Demo mode knows about leave and remote work. Try one of those.");
+  bot.textContent = prefix + demoAnswer(q);
 }
 
 $("#ask").onsubmit = e => {
@@ -289,6 +344,13 @@ $("#ask").onsubmit = e => {
   b.onclick = () => send(t);
   $("#chips").append(b);
 });
+
+/* ---------- start ---------- */
+setStatus(false);
+$("#mode").textContent = "Checking…";
+checkServer();
+setInterval(checkServer, CHECK_EVERY_MS);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkServer(); });
 </script>
 </body>
 </html>
