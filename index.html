@@ -333,42 +333,49 @@ function parseReply(raw) {
 }
 
 let busy = false;
+
+async function askN8n(q) {
+  const r = await fetch(CONFIG.n8nBase + CONFIG.chat, {
+    method: "POST", headers: HEADERS,
+    body: JSON.stringify({ action: "sendMessage", sessionId, chatInput: q })
+  });
+  const raw = await r.text();
+  if (!r.ok) { const e = new Error("HTTP " + r.status + " " + raw.slice(0, 200)); e.workflow = true; throw e; }
+  const text = parseReply(raw);
+  if (!text) { const e = new Error("No answer text in reply: " + raw.slice(0, 200)); e.workflow = true; throw e; }
+  return text;
+}
+
 async function send(q) {
   add("me", q);
   const bot = add("bot", "…");
   const offlinePrefix = "The live assistant is offline, so here is a demo answer. ";
-  if (LIVE && !busy) {
-    busy = true;
-    try {
-      const r = await fetch(CONFIG.n8nBase + CONFIG.chat, {
-        method: "POST", headers: HEADERS,
-        body: JSON.stringify({ action: "sendMessage", sessionId, chatInput: q })
-      });
-      const raw = await r.text();
-      if (!r.ok) {
-        // n8n is reachable but the workflow failed: stay Live and show why.
-        console.warn("[HR Assistant] workflow error:", r.status, raw);
-        bot.textContent = "The assistant hit an error in n8n (HTTP " + r.status + "). Open the workflow's Executions tab to see the red run. Details: " + raw.slice(0, 200);
-        return;
-      }
-      const text = parseReply(raw);
-      if (!text) {
-        console.warn("[HR Assistant] reply had no text:", raw);
-        bot.textContent = "n8n replied, but with no answer text. Make sure the last node returns an 'output' field.";
-        return;
-      }
-      bot.textContent = text; return;
-    } catch (err) {
-      // Only a real network/CORS failure means the server is unreachable.
-      console.warn("[HR Assistant] chat request failed:", err);
+  if (LIVE && busy) { bot.textContent = "Please wait for the previous answer first."; return; }
+  if (!LIVE) { bot.textContent = offlinePrefix + demoAnswer(q); return; }
+  busy = true;
+  try {
+    let text;
+    try { text = await askN8n(q); }
+    catch (e) {
+      if (!e.workflow) throw e;
+      // The workflow failed once (for example a busy AI model). Try one more time quietly.
+      console.warn("[HR Assistant] workflow error, retrying:", e.message);
+      await new Promise(res => setTimeout(res, 1500));
+      text = await askN8n(q);
+    }
+    bot.textContent = text;
+  } catch (err) {
+    console.warn("[HR Assistant] chat failed:", err);
+    if (err.workflow) {
+      // Visitors never see technical details. The reason stays in the console.
+      const hit = DEMO.find(([k]) => q.toLowerCase().includes(k));
+      bot.textContent = "Sorry, I couldn't answer that just now. Please try again in a moment." + (hit ? " Meanwhile: " + hit[1] : "");
+    } else {
       setStatus(false);
       $("#why").textContent = "Why offline: " + explain(err);
       bot.textContent = offlinePrefix + demoAnswer(q);
-      return;
-    } finally { busy = false; }
-  }
-  if (LIVE && busy) { bot.textContent = "Please wait for the previous answer first."; return; }
-  bot.textContent = offlinePrefix + demoAnswer(q);
+    }
+  } finally { busy = false; }
 }
 
 $("#ask").onsubmit = e => {
