@@ -317,30 +317,58 @@ function demoAnswer(q) {
   return hit ? hit[1] : "Demo mode knows about leave and remote work. Try one of those.";
 }
 
+// Reads n8n's reply whether it is JSON, a list, streamed lines or plain text.
+function parseReply(raw) {
+  try {
+    let d = JSON.parse(raw);
+    if (Array.isArray(d)) d = d[0] || {};
+    return d.output ?? d.text ?? d.message ?? d.response ?? null;
+  } catch (_) {}
+  const parts = [];
+  raw.split("\n").forEach(line => {
+    try { const o = JSON.parse(line); if (o.type === "item" && o.content) parts.push(o.content); } catch (_) {}
+  });
+  if (parts.length) return parts.join("");
+  return raw.trim() && !raw.trim().startsWith("<") ? raw.trim() : null;
+}
+
+let busy = false;
 async function send(q) {
   add("me", q);
   const bot = add("bot", "…");
-  let prefix = "";
-  if (LIVE) {
+  const offlinePrefix = "The live assistant is offline, so here is a demo answer. ";
+  if (LIVE && !busy) {
+    busy = true;
     try {
       const r = await fetch(CONFIG.n8nBase + CONFIG.chat, {
         method: "POST", headers: HEADERS,
         body: JSON.stringify({ action: "sendMessage", sessionId, chatInput: q })
       });
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      const data = await r.json();
-      const text = data.output ?? data.text ?? data.message;
-      if (!text) throw new Error("The workflow replied without an 'output' field: " + JSON.stringify(data));
+      const raw = await r.text();
+      if (!r.ok) {
+        // n8n is reachable but the workflow failed: stay Live and show why.
+        console.warn("[HR Assistant] workflow error:", r.status, raw);
+        bot.textContent = "The assistant hit an error in n8n (HTTP " + r.status + "). Open the workflow's Executions tab to see the red run. Details: " + raw.slice(0, 200);
+        return;
+      }
+      const text = parseReply(raw);
+      if (!text) {
+        console.warn("[HR Assistant] reply had no text:", raw);
+        bot.textContent = "n8n replied, but with no answer text. Make sure the last node returns an 'output' field.";
+        return;
+      }
       bot.textContent = text; return;
     } catch (err) {
+      // Only a real network/CORS failure means the server is unreachable.
       console.warn("[HR Assistant] chat request failed:", err);
       setStatus(false);
-      prefix = "The live assistant is offline, so here is a demo answer. ";
-    }
-  } else {
-    prefix = "The live assistant is offline, so here is a demo answer. ";
+      $("#why").textContent = "Why offline: " + explain(err);
+      bot.textContent = offlinePrefix + demoAnswer(q);
+      return;
+    } finally { busy = false; }
   }
-  bot.textContent = prefix + demoAnswer(q);
+  if (LIVE && busy) { bot.textContent = "Please wait for the previous answer first."; return; }
+  bot.textContent = offlinePrefix + demoAnswer(q);
 }
 
 $("#ask").onsubmit = e => {
