@@ -160,6 +160,7 @@ footer a{color:var(--text-light)}
     <p class="label">02 / TRY IT</p>
     <h2>Use the assistant</h2>
     <p class="sub" id="tryText">Checking the n8n server…</p>
+    <p class="note" id="why" style="margin:-20px 0 24px"></p>
 
     <div class="panel" id="ask-hr">
       <h3>Ask HR</h3>
@@ -265,20 +266,30 @@ function withTimeout(promise, ms) {
   ]);
 }
 
+function explain(err) {
+  const m = String(err && err.message || err);
+  if (m.includes("HTTP 404")) return "n8n answered 404: the chat workflow is not Active, or the chat path in CONFIG is wrong.";
+  if (m.includes("HTTP 5")) return "n8n answered with a server error (" + m + "). Check the workflow's Executions tab.";
+  if (m.includes("Timed out")) return "n8n did not answer in time. Check that Docker, n8n and ngrok are running.";
+  return "The browser could not reach n8n (" + m + "). Either ngrok/n8n is off, or CORS blocked it: Allowed Origins in the Chat Trigger must be exactly " + location.origin;
+}
+
 async function checkServer() {
   if (!CONFIG.n8nBase) return setStatus(false);
   try {
-    // "loadPreviousSession" is a light chat request: it does not run the AI agent.
+    // A light chat request that does not run the AI agent.
     const r = await withTimeout(fetch(CONFIG.n8nBase + CONFIG.chat, {
       method: "POST", headers: HEADERS,
       body: JSON.stringify({ action: "loadPreviousSession", sessionId })
     }), CHECK_TIMEOUT_MS);
-    if (!r.ok) throw new Error("HTTP " + r.status + " (is the workflow Active?)");
-    await withTimeout(r.json(), CHECK_TIMEOUT_MS); // an ngrok warning page or error page is HTML and fails here
+    // If fetch resolved, ngrok and n8n are up and CORS allowed the page.
+    if (r.status === 404 || r.status >= 500) throw new Error("HTTP " + r.status);
     setStatus(true);
+    $("#why").textContent = "";
   } catch (err) {
     console.warn("[HR Assistant] n8n check failed:", err);
     setStatus(false);
+    $("#why").textContent = "Why offline: " + explain(err);
   }
 }
 
@@ -348,6 +359,8 @@ $("#ask").onsubmit = e => {
 /* ---------- start ---------- */
 setStatus(false);
 $("#mode").textContent = "Checking…";
+$("#mode").style.cursor = "pointer"; $("#mode").title = "Click to re-check";
+$("#mode").addEventListener("click", () => { $("#mode").textContent = "Checking…"; checkServer(); });
 checkServer();
 setInterval(checkServer, CHECK_EVERY_MS);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) checkServer(); });
