@@ -111,6 +111,26 @@ h1{font-size:clamp(40px,7vw,76px);line-height:1.04;letter-spacing:-.035em;margin
 .file small{color:var(--muted);font-family:var(--mono);font-size:12px}
 .file span{color:var(--accent);font-size:20px}
 
+
+/* workflow popups */
+button.file{width:100%;font:inherit;color:inherit;text-align:left;cursor:pointer}
+dialog.wf{width:min(860px,calc(100% - 24px));max-height:calc(100vh - 32px);padding:0;border:1px solid var(--border);border-radius:18px;background:var(--bg);color:var(--text);overflow:auto}
+dialog.wf::backdrop{background:rgba(21,20,19,.6)}
+.wf-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:22px 24px 0}
+.wf-head h3{margin:4px 0 0;font-size:24px;line-height:1.2}
+.wf-x{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--text);font-size:20px;cursor:pointer}
+.wf-x:hover{border-color:var(--accent);color:var(--accent)}
+.wf-body{padding:14px 24px 24px}
+.wf-body p{margin:0 0 14px;color:var(--muted)}
+.wf-body h4{margin:18px 0 8px;font-size:15px}
+.wf-body ul{margin:0 0 14px;padding-left:20px;color:var(--muted);font-size:15px}
+.wf-body li{margin-bottom:6px}
+.wf-body li b{color:var(--text)}
+.wf-img{display:block;margin:16px 0;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
+.wf-img img{display:block;width:100%;height:auto}
+.wf-tip{font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin:0 0 16px}
+.wf-actions{display:flex;gap:10px;flex-wrap:wrap}
+
 footer{margin-top:96px;background:var(--surface-dark);padding:28px 0;color:var(--text-light);font-size:14px}
 footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
 footer a{color:var(--text-light)}
@@ -125,7 +145,7 @@ footer a{color:var(--text-light)}
     <div class="links">
       <a href="#choose">Choose</a><a href="#try">Try it</a><a href="#how">How it works</a><a href="#download">Download</a>
     </div>
-    <a class="back" href="index.html#work">← About me</a>
+    <a class="back" href="https://ahmed-elhossary.vercel.app/">← About me</a>
   </div>
 </nav>
 
@@ -201,7 +221,7 @@ footer a{color:var(--text-light)}
       <li><div><h3>Policy upload: admin workflow</h3><p>HR adds or updates policy documents in a private form. It is not exposed on this website.</p></div></li>
     </ol>
     <figure class="shot">
-      <img src="images/workflow.png" alt="n8n workflow canvas showing the nodes of the HR chat workflow" onerror="this.parentElement.style.display='none'">
+      <img src="images/workflow-chat.png" alt="n8n workflow canvas showing the nodes of the HR chat workflow" onerror="this.parentElement.style.display='none'">
       <figcaption>The chat workflow in the n8n editor.</figcaption>
     </figure>
   </section>
@@ -210,14 +230,67 @@ footer a{color:var(--text-light)}
   <section id="download">
     <p class="label">04 / DOWNLOAD</p>
     <h2>Get the workflow files</h2>
-    <p class="sub">Cleaned JSON exports with credentials removed. Import them into your own n8n.</p>
+    <p class="sub">Click a workflow to see what it does and how it is built, then download the JSON. Credentials are removed, so connect your own after importing.</p>
     <div class="files">
-      <a class="file" href="workflows/chat-workflow.json" download><div><b>Ask HR chat</b><small>chat-workflow.json</small></div><span>↓</span></a>
-      <a class="file" href="workflows/coach-workflow.json" download><div><b>Interview coaching</b><small>coach-workflow.json</small></div><span>↓</span></a>
-      <a class="file" href="workflows/apply-workflow.json" download><div><b>Job application</b><small>apply-workflow.json</small></div><span>↓</span></a>
+      <button type="button" class="file" data-open="wf-chat"><div><b>Ask HR chat</b><small>chat-workflow.json</small></div><span>→</span></button>
+      <button type="button" class="file" data-open="wf-coach"><div><b>Interview coaching</b><small>coach-workflow.json</small></div><span>→</span></button>
+      <button type="button" class="file" data-open="wf-apply"><div><b>Job application</b><small>apply-workflow.json</small></div><span>→</span></button>
     </div>
   </section>
 </main>
+
+
+<dialog class="wf" id="wf-chat" aria-labelledby="wf-chat-t">
+  <div class="wf-head">
+    <div><p class="label" style="margin:0">ASK HR CHAT</p><h3 id="wf-chat-t">Ask HR chat: policy answers with a source</h3></div>
+    <button type="button" class="wf-x" data-close aria-label="Close">✕</button>
+  </div>
+  <div class="wf-body">
+    <p>An AI assistant that answers employee questions about leave, remote work and company rules, using only the HR policy documents HR has uploaded. If the documents do not contain the answer, it sends the employee to HR instead of guessing.</p>
+    <a class="wf-img" href="images/workflow-chat.png" target="_blank" rel="noopener" title="Open full size"><img src="images/workflow-chat.png" alt="n8n canvas of the HR chat workflow and the policy upload flow" onerror="this.parentElement.style.display='none'"></a>
+    <h4>What I built</h4>
+    <ul><li><b>Chat flow:</b> a public chat trigger passes each question to an AI agent with a strict rules prompt and an exact fallback message.</li><li><b>Retrieval:</b> the agent searches a vector store of the policy documents before it answers, so every answer is grounded in the files.</li><li><b>Memory:</b> each visitor has a session, so follow-up questions keep their context.</li><li><b>Policy upload flow:</b> a private form takes a TXT, DOCX or PDF, splits it into chunks, turns them into embeddings and stores them for search.</li></ul>
+    <p class="wf-tip">To use it: import the file, add your own Gemini and model credentials, upload your policies with the upload form, and set Allowed Origins in the Chat Trigger to your website address. The in-memory vector store is cleared when n8n restarts, so upload the policies again after a restart.</p>
+    <div class="wf-actions">
+      <a class="btn" href="workflows/chat-workflow.json" download>↓ Download chat-workflow.json</a>
+      <button type="button" class="btn ghost" data-close>Close</button>
+    </div>
+  </div>
+</dialog>
+<dialog class="wf" id="wf-coach" aria-labelledby="wf-coach-t">
+  <div class="wf-head">
+    <div><p class="label" style="margin:0">INTERVIEW COACHING</p><h3 id="wf-coach-t">Interview coaching: a team of AI agents</h3></div>
+    <button type="button" class="wf-x" data-close aria-label="Close">✕</button>
+  </div>
+  <div class="wf-body">
+    <p>A candidate submits a job description and a CV and receives a coaching report by email: how well the CV matches, a tailored cover letter and likely interview questions with model answers.</p>
+    <a class="wf-img" href="images/workflow-coach.png" target="_blank" rel="noopener" title="Open full size"><img src="images/workflow-coach.png" alt="n8n canvas of the interview coaching workflow with the orchestrator and three specialist agents" onerror="this.parentElement.style.display='none'"></a>
+    <h4>What I built</h4>
+    <ul><li><b>Form and CV reading:</b> a public form collects name, email, job description and CV; an AI model reads the CV file into text.</li><li><b>Orchestrator:</b> a Career Coach agent runs three specialist agents in a fixed order and passes results between them.</li><li><b>Specialists:</b> CV Matcher (score out of 100, strengths and gaps), Cover Letter Writer (under 230 words, facts from the CV only) and Interview Coach (five questions with short model answers).</li><li><b>Quality check and delivery:</b> a code step confirms all three sections exist, the report is converted from Markdown to HTML and sent with Gmail.</li></ul>
+    <p class="wf-tip">To use it: import the file and connect your own Gemini and Gmail credentials. The CV Read and Prepare nodes no longer hold sample data, so run the form once to test it.</p>
+    <div class="wf-actions">
+      <a class="btn" href="workflows/coach-workflow.json" download>↓ Download coach-workflow.json</a>
+      <button type="button" class="btn ghost" data-close>Close</button>
+    </div>
+  </div>
+</dialog>
+<dialog class="wf" id="wf-apply" aria-labelledby="wf-apply-t">
+  <div class="wf-head">
+    <div><p class="label" style="margin:0">JOB APPLICATION</p><h3 id="wf-apply-t">Job application: validated intake to Drive and Sheets</h3></div>
+    <button type="button" class="wf-x" data-close aria-label="Close">✕</button>
+  </div>
+  <div class="wf-body">
+    <p>A public application form that checks every submission, blocks duplicates and files the CV and the details for the HR team.</p>
+    <a class="wf-img" href="images/workflow-apply.png" target="_blank" rel="noopener" title="Open full size"><img src="images/workflow-apply.png" alt="n8n canvas of the job application workflow" onerror="this.parentElement.style.display='none'"></a>
+    <h4>What I built</h4>
+    <ul><li><b>Form:</b> full name, email, position (dropdown), CV upload and a short motivation.</li><li><b>Validation:</b> a code step checks the name, email format, allowed position, motivation length and that a CV file is attached; mistakes show a clear message to fix.</li><li><b>Duplicate check:</b> the sheet is read and the same email applying for the same position shows an "already applied" message.</li><li><b>Storage:</b> the CV is uploaded to Google Drive with a dated file name, a row is added to a Google Sheet and the applicant sees a confirmation.</li></ul>
+    <p class="wf-tip">To use it: import the file, connect your Google Drive and Google Sheets credentials, then replace YOUR_GOOGLE_SHEET_ID and YOUR_DRIVE_FOLDER_ID with your own sheet and folder.</p>
+    <div class="wf-actions">
+      <a class="btn" href="workflows/apply-workflow.json" download>↓ Download apply-workflow.json</a>
+      <button type="button" class="btn ghost" data-close>Close</button>
+    </div>
+  </div>
+</dialog>
 
 <footer>
   <div class="wrap">
@@ -237,7 +310,7 @@ const CHECK_EVERY_MS = 30000;   // how often the page re-checks the server
 const CHECK_TIMEOUT_MS = 8000;  // how long to wait before calling it offline
 const HEADERS = { "Content-Type": "application/json", "ngrok-skip-browser-warning": "1" };
 const $ = s => document.querySelector(s);
-const sessionId = crypto.randomUUID();
+let sessionId = crypto.randomUUID();
 let LIVE = false;
 
 const DEMO = [
@@ -359,7 +432,8 @@ async function send(q) {
     catch (e) {
       if (!e.workflow) throw e;
       // The workflow failed once (for example a busy AI model). Try one more time quietly.
-      console.warn("[HR Assistant] workflow error, retrying:", e.message);
+      console.warn("[HR Assistant] workflow error, retrying with a fresh session:", e.message);
+      sessionId = crypto.randomUUID(); // a failed run can leave the chat memory broken, so start clean
       await new Promise(res => setTimeout(res, 1500));
       text = await askN8n(q);
     }
@@ -399,6 +473,14 @@ $("#mode").addEventListener("click", () => { $("#mode").textContent = "Checking�
 checkServer();
 setInterval(checkServer, CHECK_EVERY_MS);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) checkServer(); });
+
+/* ---------- workflow popups ---------- */
+document.querySelectorAll("[data-open]").forEach(b =>
+  b.addEventListener("click", () => document.getElementById(b.dataset.open).showModal()));
+document.querySelectorAll("dialog.wf").forEach(dlg => {
+  dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); }); // click outside closes
+  dlg.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => dlg.close()));
+});
 </script>
 </body>
 </html>
