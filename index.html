@@ -232,9 +232,9 @@ footer a{color:var(--text-light)}
     <h2>Get the workflow files</h2>
     <p class="sub">Click a workflow to see what it does and how it is built, then download the JSON. Credentials are removed, so connect your own after importing.</p>
     <div class="files">
-      <button type="button" class="file" data-open="wf-chat"><div><b>Ask HR chat</b><small>chat-workflow.json</small></div><span>→</span></button>
-      <button type="button" class="file" data-open="wf-coach"><div><b>Interview coaching</b><small>coach-workflow.json</small></div><span>→</span></button>
-      <button type="button" class="file" data-open="wf-apply"><div><b>Job application</b><small>apply-workflow.json</small></div><span>→</span></button>
+      <button type="button" class="file" data-open="wf-chat"><div><b>Ask HR chat</b><small>05-rag-gpt.json</small></div><span>→</span></button>
+      <button type="button" class="file" data-open="wf-coach"><div><b>Interview coaching</b><small>06-job-application-coach.json</small></div><span>→</span></button>
+      <button type="button" class="file" data-open="wf-apply"><div><b>Job application</b><small>01-recruitment-intake.json</small></div><span>→</span></button>
     </div>
   </section>
 </main>
@@ -252,7 +252,7 @@ footer a{color:var(--text-light)}
     <ul><li><b>Chat flow:</b> a public chat trigger passes each question to an AI agent with a strict rules prompt and an exact fallback message.</li><li><b>Retrieval:</b> the agent searches a vector store of the policy documents before it answers, so every answer is grounded in the files.</li><li><b>Memory:</b> each visitor has a session, so follow-up questions keep their context.</li><li><b>Policy upload flow:</b> a private form takes a TXT, DOCX or PDF, splits it into chunks, turns them into embeddings and stores them for search.</li></ul>
     <p class="wf-tip">To use it: import the file, add your own Gemini and model credentials, upload your policies with the upload form, and set Allowed Origins in the Chat Trigger to your website address. The in-memory vector store is cleared when n8n restarts, so upload the policies again after a restart.</p>
     <div class="wf-actions">
-      <a class="btn" href="workflows/chat-workflow.json" download>↓ Download chat-workflow.json</a>
+      <a class="btn" href="workflows/05-rag-gpt.json" download>↓ Download 05-rag-gpt.json</a>
       <button type="button" class="btn ghost" data-close>Close</button>
     </div>
   </div>
@@ -269,7 +269,7 @@ footer a{color:var(--text-light)}
     <ul><li><b>Form and CV reading:</b> a public form collects name, email, job description and CV; an AI model reads the CV file into text.</li><li><b>Orchestrator:</b> a Career Coach agent runs three specialist agents in a fixed order and passes results between them.</li><li><b>Specialists:</b> CV Matcher (score out of 100, strengths and gaps), Cover Letter Writer (under 230 words, facts from the CV only) and Interview Coach (five questions with short model answers).</li><li><b>Quality check and delivery:</b> a code step confirms all three sections exist, the report is converted from Markdown to HTML and sent with Gmail.</li></ul>
     <p class="wf-tip">To use it: import the file and connect your own Gemini and Gmail credentials. The CV Read and Prepare nodes no longer hold sample data, so run the form once to test it.</p>
     <div class="wf-actions">
-      <a class="btn" href="workflows/coach-workflow.json" download>↓ Download coach-workflow.json</a>
+      <a class="btn" href="workflows/06-job-application-coach.json" download>↓ Download 06-job-application-coach.json</a>
       <button type="button" class="btn ghost" data-close>Close</button>
     </div>
   </div>
@@ -286,7 +286,7 @@ footer a{color:var(--text-light)}
     <ul><li><b>Form:</b> full name, email, position (dropdown), CV upload and a short motivation.</li><li><b>Validation:</b> a code step checks the name, email format, allowed position, motivation length and that a CV file is attached; mistakes show a clear message to fix.</li><li><b>Duplicate check:</b> the sheet is read and the same email applying for the same position shows an "already applied" message.</li><li><b>Storage:</b> the CV is uploaded to Google Drive with a dated file name, a row is added to a Google Sheet and the applicant sees a confirmation.</li></ul>
     <p class="wf-tip">To use it: import the file, connect your Google Drive and Google Sheets credentials, then replace YOUR_GOOGLE_SHEET_ID and YOUR_DRIVE_FOLDER_ID with your own sheet and folder.</p>
     <div class="wf-actions">
-      <a class="btn" href="workflows/apply-workflow.json" download>↓ Download apply-workflow.json</a>
+      <a class="btn" href="workflows/01-recruitment-intake.json" download>↓ Download 01-recruitment-intake.json</a>
       <button type="button" class="btn ghost" data-close>Close</button>
     </div>
   </div>

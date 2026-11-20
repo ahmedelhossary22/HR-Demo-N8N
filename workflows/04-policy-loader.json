@@ -1,0 +1,286 @@
+{
+  "name": "Policy Loader",
+  "nodes": [
+    {
+      "parameters": {
+        "events": [
+          "init"
+        ]
+      },
+      "type": "n8n-nodes-base.n8nTrigger",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        -48
+      ],
+      "id": "11b7d11a-bfc7-4d6f-9b84-177b1d5b7e52",
+      "name": "When n8n Starts"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -528,
+        112
+      ],
+      "id": "762bf8a0-8518-4007-ae08-e051ff5cf05e",
+      "name": "Every Morning 7 AM"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        -192
+      ],
+      "id": "07b779eb-a8bf-4412-a8d7-dd5d3b9058a0",
+      "name": "Reload Now"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "15sD9Yy3ySkJBi0OeAZ6Jz-fokeXDmzkS",
+            "mode": "id"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -160,
+        48
+      ],
+      "id": "4b53ca21-2ce5-445a-8465-95626ae9cbc1",
+      "name": "List Policy Files",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "6On2gW407wyxt7hI",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "=text/plain"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        64,
+        48
+      ],
+      "id": "5d264cac-a39b-4b85-bfd7-eab54a86857d",
+      "name": "Download Policy",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "6On2gW407wyxt7hI",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        288,
+        320
+      ],
+      "id": "b5ade796-c19e-4f11-8005-aba919ab1372",
+      "name": "Gemini Embeddings",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "JhXW9wLg9WlqKdr0",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "value": "HR policy",
+          "mode": "list",
+          "cachedResultName": "HR policy"
+        },
+        "clearStore": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        48
+      ],
+      "id": "5afa7a27-09c2-4bb3-97e0-91a9563ec08c",
+      "name": "Reload Knowledge Base"
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {
+          "splitPages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        176
+      ],
+      "id": "24a33317-dd53-4813-9207-49365369a671",
+      "name": "Read Policy Text"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        544,
+        384
+      ],
+      "id": "c7d553d4-0eff-43e8-9d1f-b2bfe4c9e436",
+      "name": "Split Into Chunks"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every Morning 7 AM": {
+      "main": [
+        [
+          {
+            "node": "List Policy Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When n8n Starts": {
+      "main": [
+        [
+          {
+            "node": "List Policy Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reload Now": {
+      "main": [
+        [
+          {
+            "node": "List Policy Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Policy Files": {
+      "main": [
+        [
+          {
+            "node": "Download Policy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Policy": {
+      "main": [
+        [
+          {
+            "node": "Reload Knowledge Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Reload Knowledge Base",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Policy Text": {
+      "ai_document": [
+        [
+          {
+            "node": "Reload Knowledge Base",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Into Chunks": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Read Policy Text",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "Xin37ErpHAn5JRoF",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "f612591d-f19e-4231-8382-a3815f52a955",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a050f6c3477c01fe83acb33965e40055bc278a1022d8689d0bebc541900ee8ab"
+  },
+  "nodeGroups": [],
+  "id": "lbeiVmFt9FzIIyng",
+  "tags": []
+}
