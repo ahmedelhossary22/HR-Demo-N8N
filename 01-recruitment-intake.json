@@ -1,0 +1,552 @@
+{
+  "name": "01-Recruitment (Intake Form To Drive)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Join Our Team In CodeX",
+        "formDescription": "Collect job applications from candidates, gather their personal information, contact details, CVs, and professional experience, and automatically process submissions for the recruitment team.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Full Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Position",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "AI Automation Engineer (Junior)"
+                  },
+                  {
+                    "option": "Data Analyst"
+                  },
+                  {
+                    "option": "Customer Support Specialist"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "CV",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Why do you want this job?",
+              "fieldType": "textarea"
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false,
+          "buttonLabel": "Submit",
+          "customCss": ":root {\n\t--font-family: 'Open Sans', sans-serif;\n\t--font-weight-normal: 400;\n\t--font-weight-bold: 600;\n\t--font-size-body: 12px;\n\t--font-size-label: 14px;\n\t--font-size-test-notice: 12px;\n\t--font-size-input: 14px;\n\t--font-size-header: 20px;\n\t--font-size-paragraph: 14px;\n\t--font-size-link: 12px;\n\t--font-size-error: 12px;\n\t--font-size-html-h1: 28px;\n\t--font-size-html-h2: 20px;\n\t--font-size-html-h3: 16px;\n\t--font-size-html-h4: 14px;\n\t--font-size-html-h5: 12px;\n\t--font-size-html-h6: 10px;\n\t--font-size-subheader: 14px;\n\n\t/* Colors */\n\t--color-background: #fbfcfe;\n\t--color-test-notice-text: #e6a23d;\n\t--color-test-notice-bg: #fefaf6;\n\t--color-test-notice-border: #f6dcb7;\n\t--color-card-bg: #ffffff;\n\t--color-card-border: #dbdfe7;\n\t--color-card-shadow: rgba(99, 77, 255, 0.06);\n\t--color-link: #7e8186;\n\t--color-header: #525356;\n\t--color-label: #555555;\n\t--color-input-border: #dbdfe7;\n\t--color-input-text: #71747A;\n\t--color-focus-border: rgb(90, 76, 194);\n\t--color-submit-btn-bg: #ff6d5a;\n\t--color-submit-btn-text: #ffffff;\n\t--color-error: #ea1f30;\n\t--color-required: #ff6d5a;\n\t--color-clear-button-bg: #7e8186;\n\t--color-html-text: #555;\n\t--color-html-link: #ff6d5a;\n\t--color-header-subtext: #7e8186;\n\n\t/* Border Radii */\n\t--border-radius-card: 8px;\n\t--border-radius-input: 6px;\n\t--border-radius-clear-btn: 50%;\n\t--card-border-radius: 8px;\n\n\t/* Spacing */\n\t--padding-container-top: 24px;\n\t--padding-card: 24px;\n\t--padding-test-notice-vertical: 12px;\n\t--padding-test-notice-horizontal: 24px;\n\t--margin-bottom-card: 16px;\n\t--padding-form-input: 12px;\n\t--card-padding: 24px;\n\t--card-margin-bottom: 16px;\n\n\t/* Dimensions */\n\t--container-width: 448px;\n\t--submit-btn-height: 48px;\n\t--checkbox-size: 18px;\n\n\t/* Others */\n\t--box-shadow-card: 0px 4px 16px 0px var(--color-card-shadow);\n\t--opacity-placeholder: 0.5;\n}",
+          "showHeaders": false
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        -1024,
+        -80
+      ],
+      "id": "b7615f44-473a-4d28-8388-547159ae8f49",
+      "name": "Apply for a Job",
+      "webhookId": "YOUR_WEBHOOKID"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst f = item.json;\nconst errors = [];\n \nconst name = String(f['Full Name'] || '').trim().replace(/\\s+/g, ' ');\nconst email = String(f.Email || '').trim().toLowerCase();\nconst position = f.Position;\nconst motivation = String(f['Why do you want this job?'] || '').trim();\nconst allowed = ['AI Automation Engineer (Junior)', 'Data Analyst', 'Customer Support Specialist'];\n \nif (name.length < 3 || name.split(' ').length < 2 || !/^[\\p{L} .'-]+$/u.test(name))\n  errors.push('Please enter your full name (first and last name, letters only).');\nif (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/.test(email))\n  errors.push('Please enter a valid email address.');\nif (!allowed.includes(position))\n  errors.push('Please choose one of the listed positions.');\nif (motivation.length > 1500)\n  errors.push('Please keep your motivation under 1500 characters.');\n \nif (!item.binary || !item.binary.CV) {\n  errors.push('Please attach your CV.');\n} else {\n  const buf = await this.helpers.getBinaryDataBuffer(0, 'CV');\n  if (buf.subarray(0, 5).toString() !== '%PDF-') errors.push('Your CV must be a real PDF file (renaming a Word file to .pdf does not work).');\n  if (buf.length > 5 * 1024 * 1024) errors.push('Your CV must be smaller than 5 MB.');\n  if (buf.length < 500) errors.push('Your CV file looks empty or damaged. Please export it again.');\n}\n \nreturn [{\n  json: { name, email, position, motivation, valid: errors.length === 0, errors, errorText: errors.map(e => '- ' + e).join('\\n') },\n  binary: item.binary,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        -80
+      ],
+      "id": "e1a3be83-8408-4e2c-9c2b-b8dc795af132",
+      "name": "Validate Submission"
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Fix your application ",
+        "completionMessage": "={{ $json.errorText }}",
+        "options": {
+          "formTitle": "",
+          "appendAttribution": false,
+          "customCss": ":root {\n\t--font-family: 'Open Sans', sans-serif;\n\t--font-weight-normal: 400;\n\t--font-weight-bold: 600;\n\t--font-size-body: 12px;\n\t--font-size-label: 14px;\n\t--font-size-test-notice: 12px;\n\t--font-size-input: 14px;\n\t--font-size-header: 20px;\n\t--font-size-paragraph: 14px;\n\t--font-size-link: 12px;\n\t--font-size-error: 12px;\n\t--font-size-html-h1: 28px;\n\t--font-size-html-h2: 20px;\n\t--font-size-html-h3: 16px;\n\t--font-size-html-h4: 14px;\n\t--font-size-html-h5: 12px;\n\t--font-size-html-h6: 10px;\n\t--font-size-subheader: 14px;\n\n\t/* Colors */\n\t--color-background: #fbfcfe;\n\t--color-test-notice-text: #e6a23d;\n\t--color-test-notice-bg: #fefaf6;\n\t--color-test-notice-border: #f6dcb7;\n\t--color-card-bg: #ffffff;\n\t--color-card-border: #dbdfe7;\n\t--color-card-shadow: rgba(99, 77, 255, 0.06);\n\t--color-link: #7e8186;\n\t--color-header: #525356;\n\t--color-label: #555555;\n\t--color-input-border: #dbdfe7;\n\t--color-input-text: #71747A;\n\t--color-focus-border: rgb(90, 76, 194);\n\t--color-submit-btn-bg: #ff6d5a;\n\t--color-submit-btn-text: #ffffff;\n\t--color-error: #ea1f30;\n\t--color-required: #ff6d5a;\n\t--color-clear-button-bg: #7e8186;\n\t--color-html-text: #555;\n\t--color-html-link: #ff6d5a;\n\t--color-header-subtext: #7e8186;\n\n\t/* Border Radii */\n\t--border-radius-card: 8px;\n\t--border-radius-input: 6px;\n\t--border-radius-clear-btn: 50%;\n\t--card-border-radius: 8px;\n\n\t/* Spacing */\n\t--padding-container-top: 24px;\n\t--padding-card: 24px;\n\t--padding-test-notice-vertical: 12px;\n\t--padding-test-notice-horizontal: 24px;\n\t--margin-bottom-card: 16px;\n\t--padding-form-input: 12px;\n\t--card-padding: 24px;\n\t--card-margin-bottom: 16px;\n\n\t/* Dimensions */\n\t--container-width: 448px;\n\t--submit-btn-height: 48px;\n\t--checkbox-size: 18px;\n\n\t/* Others */\n\t--box-shadow-card: 0px 4px 16px 0px var(--color-card-shadow);\n\t--opacity-placeholder: 0.5;\n}"
+        }
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        -352,
+        16
+      ],
+      "id": "60cef0aa-4c1e-42c2-b67f-79c96390e1c7",
+      "name": "Fix your Submission",
+      "webhookId": "YOUR_WEBHOOKID"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sub = $('Validate Submission').first();\nconst duplicate = $input.all().some(r =>\n  String(r.json.Email || '').toLowerCase() === sub.json.email && r.json.Position === sub.json.position);\nreturn [{ json: { ...sub.json, duplicate }, binary: sub.binary }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -208
+      ],
+      "id": "311fdd12-5be5-4292-ac83-04867ae978d0",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_ID",
+          "mode": "list",
+          "cachedResultName": "Application"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "filtersUI": {
+          "values": []
+        },
+        "combineFilters": "OR",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -304,
+        -208
+      ],
+      "id": "15323b26-7779-4bea-8958-0e88cdcdc93d",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "083f485c-39b8-4429-9e9b-ea7613d2d514",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -576,
+        -80
+      ],
+      "id": "3995de85-a243-4f06-8046-ad456a58acbf",
+      "name": "Submission Valid?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "408327f2-70ac-477e-814f-71f45dce348c",
+              "leftValue": "={{ $json.duplicate }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        192,
+        -208
+      ],
+      "id": "3a8ec479-a0c6-471f-8281-04b07cb1f5e7",
+      "name": "Already Applied?"
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Already applied",
+        "completionMessage": "We have your cs so wait until we send a message for you ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        352,
+        -352
+      ],
+      "id": "6b24f13b-f080-45d9-af73-6cbc8569e874",
+      "name": "Show Already Applied",
+      "webhookId": "YOUR_WEBHOOKID"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "CV",
+        "name": "={{ $now.toFormat('yyyy-MM-dd HHmm') }} - {{$json.name}} - {{ $json.position }}.pdf",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive",
+          "cachedResultName": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "YOUR_ID",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        416,
+        -112
+      ],
+      "id": "3f5fc717-cb6f-456b-a2e1-2660da6e81c2",
+      "name": "Upload CV to Drive"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_ID",
+          "mode": "list",
+          "cachedResultName": "Application"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Applied At": "={{ $now.format('yyyy-MM-dd') }}",
+            "Name": "={{ $('Apply for a Job').item.json[\"Full Name\"] }}",
+            "Email": "={{ $('Apply for a Job').item.json.Email }}",
+            "Position": "={{ $('Apply for a Job').item.json.Position }}",
+            "Motivation": "={{ $('Apply for a Job').item.json[\"Why do you want this job?\"] }}",
+            "CV File ID": "={{ $json.id }}",
+            "CV Link": "=YOUR_GOOGLE_URL $json.id }}/view",
+            "Status": "new"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Applied At",
+              "displayName": "Applied At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Position",
+              "displayName": "Position",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Motivation",
+              "displayName": "Motivation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CV File ID",
+              "displayName": "CV File ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CV Link",
+              "displayName": "CV Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Recommendation",
+              "displayName": "Recommendation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Years Experience",
+              "displayName": "Years Experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Top Skills",
+              "displayName": "Top Skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Matched",
+              "displayName": "Matched",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        624,
+        -112
+      ],
+      "id": "06ad7926-9535-424b-b4c0-a9b25d04d83e",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Successfully register",
+        "completionMessage": "We recive you application. Wait for an email ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        848,
+        -112
+      ],
+      "id": "0c2b0cb4-52af-44af-a4e6-e55cab8e0eb0",
+      "name": "Form",
+      "webhookId": "YOUR_WEBHOOKID"
+    }
+  ],
+  "connections": {
+    "Apply for a Job": {
+      "main": [
+        [
+          {
+            "node": "Validate Submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Submission": {
+      "main": [
+        [
+          {
+            "node": "Submission Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Already Applied?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submission Valid?": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fix your Submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already Applied?": {
+      "main": [
+        [
+          {
+            "node": "Show Already Applied",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upload CV to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload CV to Drive": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Africa/Cairo",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "Xin37ErpHAn5JRoF"
+  },
+  "nodeGroups": []
+}

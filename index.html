@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HR Assistant · Ahmed Elhossary</title>
+<meta name="description" content="An n8n-powered HR assistant that answers policy questions, coaches candidates and takes job applications. Built by Ahmed Elhossary.">
+<style>
+/* ============================================================
+   COLORS and FONT: taken from the Ahmed Elhossary portfolio
+   (ahmed-elhossary.vercel.app) so this page feels like part of it.
+   ============================================================ */
+:root{
+  --bg:#f2eee3;
+  --surface:#eae2d5;
+  --surface-dark:#151413;
+  --border:#d8ccbc;
+  --text:#191817;
+  --text-light:#f2eee3;
+  --muted:#71655c;
+  --accent:#8b1026;
+  --accent-hover:#a1343c;
+  --accent-ink:#f2eee3;
+  --ok:#1f7a4d;
+  --font:Arial,Helvetica,sans-serif;
+  --mono:Arial,Helvetica,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6}
+a{color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* nav */
+nav{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px;gap:12px}
+.logo{font-family:var(--mono);font-weight:500;text-decoration:none;color:var(--accent)}
+.links{display:flex;gap:18px;font-size:14px;color:var(--muted)}
+.links a{text-decoration:none}.links a:hover{color:var(--text)}
+.back{font-size:14px;text-decoration:none;border:1px solid var(--border);padding:7px 14px;border-radius:999px}
+.back:hover{border-color:var(--accent);color:var(--accent)}
+@media(max-width:720px){.links{display:none}}
+
+/* shared */
+section{padding:84px 0 0}
+.label{font-size:13px;letter-spacing:.08em;color:var(--accent);margin:0 0 10px}
+h2{font-size:clamp(28px,4vw,40px);line-height:1.15;margin:0 0 12px;letter-spacing:-.02em}
+.sub{color:var(--muted);max-width:620px;margin:0 0 32px}
+.btn:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn{display:inline-block;font:600 15px var(--font);padding:12px 22px;border-radius:999px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);text-decoration:none;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--border)}
+.btn.ghost:hover{background:transparent}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+
+/* hero */
+.hero{padding-top:72px}
+.badge{display:inline-flex;align-items:center;gap:8px;font:500 13px var(--mono);padding:6px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--muted)}
+.badge::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.badge.live{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,var(--border))}
+.badge.live::before{background:var(--ok)}
+h1{font-size:clamp(40px,7vw,76px);line-height:1.04;letter-spacing:-.035em;margin:22px 0 18px;font-weight:800;max-width:860px}
+.lead{font-size:19px;color:var(--muted);max-width:620px;margin:0 0 28px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.by{margin-top:36px;font-size:14px;color:var(--muted)}
+.by b{color:var(--text)}
+
+/* choose */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.card{display:block;text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;transition:border-color .2s}
+.card:hover{border-color:var(--accent)}
+.card .ic{font-family:var(--mono);color:var(--accent);font-size:13px}
+.card h3{margin:10px 0 6px;font-size:20px}
+.card p{margin:0;color:var(--muted);font-size:15px}
+
+/* try it */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px}
+.panel + .panel{margin-top:16px}
+.panel h3{margin:0 0 4px;font-size:18px}
+.panel .hint{margin:0 0 14px;color:var(--muted);font-size:14px}
+#msgs{border:1px solid var(--border);background:var(--bg);border-radius:12px;padding:14px;min-height:180px;max-height:360px;overflow:auto}
+.me{text-align:right;margin:8px 0}
+.me span{display:inline-block;background:var(--accent);color:var(--accent-ink);padding:8px 14px;border-radius:14px 14px 4px 14px;max-width:85%;text-align:left}
+.bot{margin:8px 0;white-space:pre-wrap;max-width:85%;background:var(--surface);border:1px solid var(--border);padding:8px 14px;border-radius:14px 14px 14px 4px}
+#ask{display:flex;gap:10px;margin-top:12px}
+#q{flex:1;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:999px;padding:12px 18px;font:15px var(--font)}
+#q:focus{border-color:var(--accent);outline:none}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.chip{font:13px var(--font);color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:999px;padding:6px 12px;cursor:pointer}
+.chip:hover{color:var(--accent);border-color:var(--accent)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.two .panel{margin:0}
+@media(max-width:720px){.two{grid-template-columns:1fr}}
+.note{font-size:13px;color:var(--muted);margin:10px 0 0;min-height:20px}
+
+/* how */
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:12px;counter-reset:s}
+.steps li{counter-increment:s;display:grid;grid-template-columns:44px 1fr;gap:16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+.steps li::before{content:counter(s);font:500 18px var(--mono);color:var(--accent);width:36px;height:36px;display:grid;place-items:center;border:1px solid var(--border);border-radius:50%}
+.steps h3{margin:0 0 4px;font-size:17px}
+.steps p{margin:0;color:var(--muted);font-size:15px}
+.shot{margin-top:20px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}
+.shot img{display:block;width:100%;height:auto}
+.shot figcaption{font-size:13px;color:var(--muted);padding:10px 16px;border-top:1px solid var(--border)}
+
+/* download */
+.files{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.file{display:flex;justify-content:space-between;align-items:center;gap:12px;text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.file:hover{border-color:var(--accent)}
+.file b{display:block;font-size:15px}
+.file small{color:var(--muted);font-family:var(--mono);font-size:12px}
+.file span{color:var(--accent);font-size:20px}
+
+footer{margin-top:96px;background:var(--surface-dark);padding:28px 0;color:var(--text-light);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+footer a{color:var(--text-light)}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="logo" href="index.html">&lt;Ahmed Elhossary/&gt;</a>
+    <div class="links">
+      <a href="#choose">Choose</a><a href="#try">Try it</a><a href="#how">How it works</a><a href="#download">Download</a>
+    </div>
+    <a class="back" href="index.html#work">← About me</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- 1. HERO -->
+  <section class="hero">
+    <span class="badge" id="mode">Demo mode</span>
+    <h1>HR answers, interview coaching and job applications in one place.</h1>
+    <p class="lead">Built for employees and job seekers who want a fast, clear answer instead of waiting on an HR inbox. Powered by n8n workflows and an AI model.</p>
+    <div class="cta">
+      <a class="btn" href="#try">Try it now</a>
+      <a class="btn ghost" href="#how">See how it works</a>
+    </div>
+    <p class="by">Project by <b>Ahmed Elhossary</b> · AI Automation Engineer · <a href="https://ahmed-elhossary.vercel.app/#contact">Get in touch</a></p>
+  </section>
+
+  <!-- 2. CHOOSE -->
+  <section id="choose">
+    <p class="label">01 / CHOOSE</p>
+    <h2>What do you want to do?</h2>
+    <p class="sub">Pick one. Each card takes you straight to the right tool.</p>
+    <div class="cards">
+      <a class="card" href="#ask-hr"><div class="ic">HR</div><h3>Ask HR</h3><p>Get answers about leave, remote work and company policy.</p></a>
+      <a class="card" href="#coach"><div class="ic">COACH</div><h3>Get coached</h3><p>Upload your answers and receive an interview coaching report.</p></a>
+      <a class="card" href="#apply"><div class="ic">APPLY</div><h3>Apply</h3><p>Send your application through the public form.</p></a>
+    </div>
+  </section>
+
+  <!-- 3. TRY IT -->
+  <section id="try">
+    <p class="label">02 / TRY IT</p>
+    <h2>Use the assistant</h2>
+    <p class="sub" id="tryText">Demo mode answers with sample data. Connect your n8n in the CONFIG block to go live.</p>
+
+    <div class="panel" id="ask-hr">
+      <h3>Ask HR</h3>
+      <p class="hint">Ask about a policy and the answer names its source.</p>
+      <div id="msgs" aria-live="polite"></div>
+      <form id="ask">
+        <input id="q" placeholder="How many leave days do I get?" autocomplete="off" required>
+        <button class="btn">Ask</button>
+      </form>
+      <div class="chips" id="chips"></div>
+    </div>
+
+    <div class="two">
+      <div class="panel" id="coach">
+        <h3>Get coached</h3>
+        <p class="hint">Fill in the coaching form and get a report on your interview answers.</p>
+        <a class="btn ghost" id="coachLink" href="#coach">Open coaching form</a>
+        <p class="note" id="coachNote"></p>
+      </div>
+      <div class="panel" id="apply">
+        <h3>Apply for a job</h3>
+        <p class="hint">Submit your details and CV through the application form.</p>
+        <a class="btn ghost" id="applyLink" href="#apply">Open application form</a>
+        <p class="note" id="applyNote"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. HOW IT WORKS -->
+  <section id="how">
+    <p class="label">03 / HOW IT WORKS</p>
+    <h2>Four n8n workflows behind the page</h2>
+    <p class="sub">Each action on this page triggers its own workflow.</p>
+    <ol class="steps">
+      <li><div><h3>Ask HR: chat workflow</h3><p>A chat webhook receives your question. An AI agent searches the HR policy knowledge base and replies with the answer and its source.</p></div></li>
+      <li><div><h3>Get coached: coaching workflow</h3><p>A public form sends your answers to an AI model that scores them and returns a structured coaching report.</p></div></li>
+      <li><div><h3>Apply: application workflow</h3><p>A public form collects the application, validates it and stores it for the HR team.</p></div></li>
+      <li><div><h3>Policy upload: admin workflow</h3><p>HR adds or updates policy documents in a private form. It is not exposed on this website.</p></div></li>
+    </ol>
+    <figure class="shot">
+      <img src="images/workflow.png" alt="n8n workflow canvas showing the nodes of the HR chat workflow" onerror="this.parentElement.style.display='none'">
+      <figcaption>The chat workflow in the n8n editor.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 5. DOWNLOAD -->
+  <section id="download">
+    <p class="label">04 / DOWNLOAD</p>
+    <h2>Get the workflow files</h2>
+    <p class="sub">Cleaned JSON exports with credentials removed. Import them into your own n8n.</p>
+    <div class="files">
+      <a class="file" href="workflows/chat-workflow.json" download><div><b>Ask HR chat</b><small>chat-workflow.json</small></div><span>↓</span></a>
+      <a class="file" href="workflows/coach-workflow.json" download><div><b>Interview coaching</b><small>coach-workflow.json</small></div><span>↓</span></a>
+      <a class="file" href="workflows/apply-workflow.json" download><div><b>Job application</b><small>apply-workflow.json</small></div><span>↓</span></a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Ahmed Elhossary · AI · Automation · Data · Software</span>
+    <span><a href="https://ahmed-elhossary.vercel.app/">Portfolio</a> · <a href="https://github.com/ahmedelhossary22">GitHub</a> · <a href="https://www.linkedin.com/in/ahmed-elhossary-ai-engineer/">LinkedIn</a></span>
+  </div>
+</footer>
+
+<script>
+const CONFIG = {
+  n8nBase: "https://playback-reply-rambling.ngrok-free.dev",  // no trailing slash. Empty = demo mode
+  chat: "/webhook/9f859b66-bd30-4594-a999-ca0597727b6e/chat",
+  applyForm: "/form/376e7fa0-f418-4ea8-9582-db37fc4988c1",
+  coachForm: "/form/bc779da8-f9b5-4bf1-a0e4-8ac14fbccfdb"
+};
+const LIVE = !!CONFIG.n8nBase;
+const $ = s => document.querySelector(s);
+const sessionId = crypto.randomUUID();
+const DEMO = [
+  ["leave", "Full-time employees get 21 days of paid annual leave. (Source: Leave Policy)"],
+  ["remote", "You can work remotely up to 2 days a week after probation. (Source: Remote Work Policy)"]
+];
+
+if (LIVE) {
+  $("#mode").textContent = "Live · n8n"; $("#mode").classList.add("live");
+  $("#tryText").textContent = "Live mode: the chat and forms run on a real n8n server.";
+  $("#applyLink").href = CONFIG.n8nBase + CONFIG.applyForm;
+  $("#coachLink").href = CONFIG.n8nBase + CONFIG.coachForm;
+  ["#applyLink", "#coachLink"].forEach(id => { $(id).target = "_blank"; $(id).rel = "noopener"; });
+} else {
+  $("#coachNote").textContent = "Demo mode: the live form opens once n8n is connected.";
+  $("#applyNote").textContent = "Demo mode: the live form opens once n8n is connected.";
+  ["#applyLink", "#coachLink"].forEach(id => $(id).addEventListener("click", e => e.preventDefault()));
+}
+
+function add(cls, text) {
+  const d = document.createElement("div"); d.className = cls;
+  if (cls === "me") { const s = document.createElement("span"); s.textContent = text; d.append(s); }
+  else d.textContent = text;
+  $("#msgs").append(d); $("#msgs").scrollTop = 1e9; return d;
+}
+
+async function send(q) {
+  add("me", q);
+  const bot = add("bot", "…");
+  let prefix = "";
+  if (LIVE) {
+    try {
+      const r = await fetch(CONFIG.n8nBase + CONFIG.chat, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "1" },
+        body: JSON.stringify({ action: "sendMessage", sessionId, chatInput: q })
+      });
+      bot.textContent = (await r.json()).output; return;
+    } catch (err) { prefix = "The live assistant is offline, so here is a demo answer. "; }
+  }
+  const hit = DEMO.find(([k]) => q.toLowerCase().includes(k));
+  bot.textContent = prefix + (hit ? hit[1] : "Demo mode knows about leave and remote work. Try one of those.");
+}
+
+$("#ask").onsubmit = e => {
+  e.preventDefault();
+  const q = $("#q").value.trim(); if (!q) return;
+  $("#q").value = ""; send(q);
+};
+
+["How many leave days do I get?", "Can I work remotely?"].forEach(t => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "chip"; b.textContent = t;
+  b.onclick = () => send(t);
+  $("#chips").append(b);
+});
+</script>
+</body>
+</html>
